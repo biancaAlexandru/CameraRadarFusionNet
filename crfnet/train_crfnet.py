@@ -48,7 +48,9 @@ def model_with_weights(model, weights, skip_mismatch, config=None, num_classes=N
 
     :param model:           <keras.Model>       The model to load weights for
     :param weights:         <string>            Path to the weights file to load
-    :param skip_mismatch:   <bool>              If True, skips layers whose shape of weights doesn't match with the model.
+    :param skip_mismatch:   <bool>              If True, skips layers whose shape of weights doesn't match with the model
+    :param config:          <None>
+    :param num_classes      <None>
 
     :return model:          <keras.Model>       The model with loaded weights
     """
@@ -56,9 +58,9 @@ def model_with_weights(model, weights, skip_mismatch, config=None, num_classes=N
     if weights is not None:
         model.load_weights(weights, by_name=True, skip_mismatch=skip_mismatch)
         if len(config.channels) > 3:
-            config.channels = [0,1,2]
+            config.channels = [0, 1, 2]
             img_backbone = architectures.backbone('vgg16')
-            ## get img weights
+            # get img weights
             # create img model
             img_model, _, _ = create_models(
                 backbone_retinanet=img_backbone.retinanet,
@@ -67,10 +69,10 @@ def model_with_weights(model, weights, skip_mismatch, config=None, num_classes=N
                 multi_gpu=0, 
                 freeze_backbone=False,
                 lr=config.learning_rate,
-                inputs=(None,None,3),
+                inputs=(None, None, 3),
                 cfg=config,
-                distance = config.distance_detection,
-                distance_alpha = config.distance_alpha
+                distance=config.distance_detection,
+                distance_alpha=config.distance_alpha
             )
 
             img_model.load_weights(weights, by_name=True, skip_mismatch=skip_mismatch)
@@ -120,7 +122,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
         num_anchors = AnchorParameters.small.num_anchors()
     else:
         anchor_params = None
-        num_anchors   = None
+        num_anchors = None
 
     # Keras recommends initialising a multi-gpu model on the CPU to ease weight sharing, and to prevent OOM errors.
     # optionally wrap in a parallel model
@@ -128,11 +130,13 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
         from keras.utils import multi_gpu_model
         
         with tf.device('/cpu:0'):
-            model = model_with_weights(backbone_retinanet(num_classes, num_anchors=num_anchors, modifier=modifier, inputs=inputs, distance=distance), weights=weights, skip_mismatch=True, config=copy.deepcopy(cfg), num_classes=num_classes)
+            model = model_with_weights(backbone_retinanet(num_classes, num_anchors=num_anchors, modifier=modifier,
+                    inputs=inputs, distance=distance), weights=weights, skip_mismatch=True, config=copy.deepcopy(cfg),
+                                       num_classes=num_classes)
         
         training_model = multi_gpu_model(model, gpus=multi_gpu)
     else:
-        model          = model_with_weights(backbone_retinanet(num_classes, num_anchors=num_anchors, modifier=modifier, inputs=inputs, distance=distance, cfg=cfg), weights=weights, skip_mismatch=True, config=copy.deepcopy(cfg), num_classes=num_classes)
+        model= model_with_weights(backbone_retinanet(num_classes, num_anchors=num_anchors, modifier=modifier, inputs=inputs, distance=distance, cfg=cfg), weights=weights, skip_mismatch=True, config=copy.deepcopy(cfg), num_classes=num_classes)
         training_model = model
 
     try:
@@ -153,16 +157,16 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
     if distance:
         training_model.compile(
             loss={
-                'regression'    : losses.smooth_l1(),
+                'regression': losses.smooth_l1(),
                 'classification': losses.focal(),
-                'distance'      : losses.smooth_l1(alpha=distance_alpha)
+                'distance': losses.smooth_l1(alpha=distance_alpha)
             },
             optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001)
         )
     else:
         training_model.compile(
             loss={
-                'regression'    : losses.smooth_l1(),
+                'regression': losses.smooth_l1(),
                 'classification': losses.focal(),
             },
             optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001)
@@ -191,22 +195,21 @@ def create_callbacks(model, prediction_model, validation_generator, cfg):
         tb_logdir = os.path.join(cfg.tb_logdir, cfg.model_name)
         makedirs(tb_logdir)
         tensorboard_callback = keras.callbacks.TensorBoard(
-            log_dir                = tb_logdir,
-            histogram_freq         = 0,
-            batch_size             = cfg.batchsize,
-            write_graph            = True,
-            write_grads            = False,
-            write_images           = True,
-            embeddings_freq        = 0,
-            embeddings_layer_names = None,
-            embeddings_metadata    = None
+            log_dir=tb_logdir,
+            histogram_freq=0,
+            batch_size=cfg.batchsize,
+            write_graph=True,
+            write_grads=False,
+            write_images=True,
+            embeddings_freq=0,
+            embeddings_layer_names=None,
+            embeddings_metadata=None
         )
         tensorboard_callback.set_model(model)
 
         callbacks.append(tensorboard_callback)
     else:
         tensorboard_callback = None
-
 
     if cfg.data_set == 'coco':
         from .utils.coco import CocoEval
@@ -241,18 +244,17 @@ def create_callbacks(model, prediction_model, validation_generator, cfg):
         callbacks.append(checkpoint)
 
     callbacks.append(keras.callbacks.ReduceLROnPlateau(
-        monitor    = 'loss',
-        factor     = 0.75,
-        patience   = 2,
-        verbose    = 1,
-        mode       = 'auto',
-        min_delta  = 0.0001,
-        cooldown   = 0,
-        min_lr     = 1e-6
+        monitor='loss',
+        factor=0.75,
+        patience=2,
+        verbose=1,
+        mode='auto',
+        min_delta=0.0001,
+        cooldown=0,
+        min_lr=1e-6
     ))
 
     return callbacks
-
 
 
 def main():
@@ -265,7 +267,7 @@ def main():
     args = parser.parse_args()
 
     if not os.path.exists(args.config):
-        raise FileNotFoundError("ERROR: Config file \"%s\" not found"%(args.config))
+        raise FileNotFoundError("ERROR: Config file \"%s\" not found"%args.config)
     else:
         cfg = get_config(args.config)
 
@@ -296,13 +298,12 @@ def main():
         train_generator, validation_generator, test_generator, test_night_generator, test_rain_generator = create_generators(cfg, backbone)
     else:
         train_generator, validation_generator = create_generators(cfg, backbone)
-    
 
     # create the model
     weights = None
     if cfg.load_model:
         print('Loading model, this may take a second...')
-        model            = architectures.load_model(cfg.load_model, backbone_name=cfg.network)
+        model = architectures.load_model(cfg.load_model, backbone_name=cfg.network)
 
         training_model = model
         prediction_model = retinanet_bbox(model=model, anchor_params=None, class_specific_filter=cfg.class_specific_nms)
@@ -329,7 +330,6 @@ def main():
     # print model summary
     print(model.summary())
     print("Model Parameters: ", model.count_params())
-    
 
     # this lets the generator compute backbone layer shapes using the actual backbone model
     if 'vgg' in cfg.network or 'densenet' in cfg.network:
@@ -381,7 +381,8 @@ def main():
         verbose=1,
         callbacks=callbacks,
         workers=cfg.workers,
-        use_multiprocessing=use_multiprocessing,
+        # use_multiprocessing=use_multiprocessing,
+        use_multiprocessing=False,
         class_weight=class_weights_labels
     )
 
@@ -416,6 +417,7 @@ def main():
     print("="*60)
     print("\t######## Finished successfully ########")
     print("="*60)
+
 
 if __name__ == '__main__':
     main()

@@ -52,6 +52,7 @@ from crfnet.utils.anchor_parameters import AnchorParameters
 from crfnet.utils.colors import tum_colors
 from crfnet.data_processing.generator.crf_main_generator import create_generators
 
+
 def visualize_predictions(predictions, image_data_vis, generator, dist=False, verbose=False):
     """
     Visualizes the predictions as bounding boxes with distances or confidence score in a given image.
@@ -64,35 +65,33 @@ def visualize_predictions(predictions, image_data_vis, generator, dist=False, ve
 
     """
     
-    font                   = cv2.FONT_HERSHEY_SIMPLEX
-    fontScale              = 0.4
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    fontScale = 0.4
 
     # Visualization prediction
     all_dets = []
     [bboxes, probs, labels] = predictions
 
-
-
     for jk in range(bboxes.shape[1]):
-        (x1, y1, x2, y2) = bboxes[0,jk,:]
+        (x1, y1, x2, y2) = bboxes[0, jk, :]
         
-        key = generator.label_to_name(labels[0,jk])
-        color = class_to_color[key] *255
-        cv2.rectangle(image_data_vis,(x1, y1), (x2, y2), color,2)
+        key = generator.label_to_name(labels[0, jk])
+        color = class_to_color[key] * 255
+        cv2.rectangle(image_data_vis, (x1, y1), (x2, y2), color, 2)
 
         if dist is not False:
-            textLabel = '{0}: {1:3.1f} {2}'.format(key.split('.', 1)[-1], dist[0,jk], 'm')
-            all_dets.append((key,100*probs[0,jk], dist[0,jk]))
+            textLabel = '{0}: {1:3.1f} {2}'.format(key.split('.', 1)[-1], dist[0, jk], 'm')
+            all_dets.append((key,100*probs[0, jk], dist[0, jk]))
         else:
-            textLabel = '{}: {}'.format(key.split('.', 1)[-1],int(100*probs[0,jk]))
-            all_dets.append((key,100*probs[0,jk]))
+            textLabel = '{}: {}'.format(key.split('.', 1)[-1], int(100*probs[0, jk]))
+            all_dets.append((key, 100*probs[0, jk]))
 
-        (retval,baseLine) = cv2.getTextSize(textLabel, font, fontScale,1)
+        (retval, baseLine) = cv2.getTextSize(textLabel, font, fontScale, 1)
 
         textOrg = int(x1), int(y1)
 
-        cv2.rectangle(image_data_vis, (textOrg[0] - 1,textOrg[1]+baseLine - 1), (textOrg[0]+retval[0] + 1, textOrg[1]-retval[1] - 1), color, -1)
-        cv2.putText(image_data_vis, textLabel, textOrg, cv2.FONT_HERSHEY_SIMPLEX, fontScale, (1,1,1), 1)
+        cv2.rectangle(image_data_vis, (textOrg[0] - 1, textOrg[1]+baseLine - 1), (textOrg[0]+retval[0] + 1, textOrg[1]-retval[1] - 1), color, -1)
+        cv2.putText(image_data_vis, textLabel, textOrg, cv2.FONT_HERSHEY_SIMPLEX, fontScale, (1, 1, 1), 1)
     
     if verbose: pprint.pprint(all_dets)
 
@@ -103,7 +102,7 @@ if __name__ == '__main__':
 
     # Parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, default=os.path.join(FILE_DIRECTORY,"configs/camra_sample.cfg"))
+    parser.add_argument('--config', type=str, default=os.path.join(FILE_DIRECTORY, "configs/camra_sample.cfg"))
     parser.add_argument('--model', type=str, default="./saved_models/camra_sample.h5")
     parser.add_argument('--st', type=float, default=None)
     parser.add_argument('--inference', default=False, action='store_true')
@@ -112,7 +111,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if not os.path.exists(args.config):
-        raise FileNotFoundError("ERROR: Config file \"%s\" not found"%(args.config))
+        raise FileNotFoundError("ERROR: Config file \"%s\" not found" % args.config)
     else:
         cfg = get_config(args.config)
 
@@ -145,11 +144,12 @@ if __name__ == '__main__':
         num_anchors = AnchorParameters.small.num_anchors()
     else:
         anchor_params = None
-        num_anchors   = None
+        num_anchors = None
 
     prediction_model = retinanet_bbox(model=model, anchor_params=anchor_params, class_specific_filter=False)
 
-    use_multiprocessing = cfg.workers > 0 
+    # use_multiprocessing = cfg.workers > 0
+    use_multiprocessing = False
 
     if use_multiprocessing:
         enqueuer = keras.utils.data_utils.OrderedEnqueuer(generator, use_multiprocessing=use_multiprocessing, shuffle=False)
@@ -173,7 +173,7 @@ if __name__ == '__main__':
             inputs, _ = next(val_generator)
         else:
             inputs, _ = generator.compute_input_output([i])
-        #inputs, outputs = generator.compute_input_output([i], inference=cfg.inference)
+        # inputs, outputs = generator.compute_input_output([i], inference=cfg.inference)
 
         viz_image = generator.load_image(i)
         if not is_radar_visualization:
@@ -187,13 +187,13 @@ if __name__ == '__main__':
             boxes, scores, labels = prediction_model.predict_on_batch(inputs)[:3]
         
         selection = np.where(scores > score_threshold)[1]
-        boxes = boxes[:,selection,:]
-        scores = scores[:,selection]
-        labels = labels[:,selection]
+        boxes = boxes[:, selection, :]
+        scores = scores[:, selection]
+        labels = labels[:, selection]
         predictions = [boxes, scores, labels]        
         
         if cfg.distance_detection:
-            dists = dists[:,selection]
+            dists = dists[:, selection]
             dists *= 100
             dists = np.squeeze(dists, axis=2)
             visualize_predictions(predictions, viz_image, generator, dist=dists)

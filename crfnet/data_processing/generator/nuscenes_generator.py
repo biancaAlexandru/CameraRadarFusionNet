@@ -58,7 +58,7 @@ class NuscenesGenerator(Generator):
         self,
         nusc,
         scene_indices=None,
-        channels=[0,1,2],
+        channels=[0, 1, 2],
         category_mapping=None,
         radar_input_name=None,
         radar_width=None,
@@ -119,7 +119,7 @@ class NuscenesGenerator(Generator):
         self.angular_uncertainty = math.radians(0) # degree
         self.inference = inference
 
-        #todo we cannot initialize the parent class first, because it depends on size()
+        # todo we cannot initialize the parent class first, because it depends on size()
         self.image_min_side = kwargs['image_min_side']
         self.image_max_side = kwargs['image_max_side']
 
@@ -139,7 +139,6 @@ class NuscenesGenerator(Generator):
         self.noise_filter_threshold = noise_filter_threshold
         self.perfect_noise_filter = perfect_noise_filter
         self.noise_category_selection = noise_category_selection
-        
 
         # TEST: Create immediately
         if noise_filter and not isinstance(noise_filter, NfDockerClient):
@@ -153,16 +152,18 @@ class NuscenesGenerator(Generator):
         progbar = progressbar.ProgressBar(prefix='Initializing data generator: ')
         skip_count = 0
 
-
-
         # Resolve sample indexing
         if scene_indices is None:
             # We are using all scenes
-            scene_indices = range(len(nusc.scene))
+            # scene_indices = range(len(nusc.scene))
+            scene_indices = [*range(0, len(nusc.scene), 1)]
+            print(len(nusc.scene))
+            # print(scene_indices)
 
         assert hasattr(scene_indices, '__iter__'), "Iterable object containing sample indices expected"
-
+        print(scene_indices)
         for scene_index in scene_indices:
+            # print(scene_index)
             first_sample_token = nusc.scene[scene_index]['first_sample_token']
             nbr_samples = nusc.scene[scene_index]['nbr_samples']
 
@@ -175,7 +176,6 @@ class NuscenesGenerator(Generator):
                     curr_sample = nusc.get('sample', next_token)
                 prog += 1
                 progbar.update(prog)
-
 
         if self.sample_selection: print("\nSkipped {} samples due to zero annotations".format(skip_count))
         # Create all annotations and put into image_data

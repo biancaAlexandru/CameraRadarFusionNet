@@ -78,9 +78,8 @@ def create_generators(cfg, backbone):
     else:
       try:
         nusc = NuScenes(version='v1.0-trainval', dataroot=cfg.data_path, verbose=True)
-      except ValueError:
+      except AssertionError:
         nusc = NuScenes(version='v1.0-mini', dataroot=cfg.data_path, verbose=True)
-
 
     if 'debug' in cfg.scene_selection or 'mini' in cfg.data_set:
       scenes = Scenes.debug
@@ -89,7 +88,8 @@ def create_generators(cfg, backbone):
 
     train_generator = NuscenesGenerator(
       nusc,
-      scene_indices=scenes.train,
+      scene_indices=None,
+      # scene_indices=scenes.train,
       transform_generator=transform_generator,
       category_mapping=category_mapping,
       compute_anchor_targets=anchor_targets_bbox,
@@ -105,7 +105,8 @@ def create_generators(cfg, backbone):
 
     validation_generator = NuscenesGenerator(
       nusc,
-      scene_indices=scenes.val,
+      # scene_indices=scenes.val,
+      scene_indices=None,
       category_mapping=category_mapping,
       compute_anchor_targets=anchor_targets_bbox,
       compute_shapes=guess_shapes,
@@ -114,7 +115,8 @@ def create_generators(cfg, backbone):
 
     test_generator = NuscenesGenerator(
       nusc,
-      scene_indices=scenes.test,
+      # scene_indices=scenes.test,
+      scene_indices=None,
       category_mapping=category_mapping,
       compute_anchor_targets=anchor_targets_bbox,
       compute_shapes=guess_shapes,
@@ -123,7 +125,8 @@ def create_generators(cfg, backbone):
 
     test_night_generator = NuscenesGenerator(
       nusc,
-      scene_indices=scenes.test_night,
+      # scene_indices=scenes.test_night,
+      scene_indices=None,
       category_mapping=category_mapping,
       compute_anchor_targets=anchor_targets_bbox,
       compute_shapes=guess_shapes,
@@ -132,7 +135,8 @@ def create_generators(cfg, backbone):
 
     test_rain_generator = NuscenesGenerator(
       nusc,
-      scene_indices=scenes.test_rain,
+      # scene_indices=scenes.test_rain,
+      scene_indices=None,
       category_mapping=category_mapping,
       compute_anchor_targets=anchor_targets_bbox,
       compute_shapes=guess_shapes,
